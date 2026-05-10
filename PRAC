@@ -1,0 +1,345 @@
+---------------------1.TCP-----------------------
+import socket
+TCP_PORT = 24005
+IP_ADDR = '127.0.0.1'
+BUF_SIZE = 30
+k = socket.socket (socket.AF_INET, socket.SOCK_STREAM)
+k.bind((IP_ADDR, TCP_PORT))
+k.listen(1)
+con, addr = k.accept()
+print ("Connection Address is : " , addr)
+data = con.recv(BUF_SIZE)
+print ("Received data : ", data.decode())
+msg = "Hi, I am the Server!".encode()
+con.send(msg)
+con.close()
+
+import socket
+TCP_PORT = 24005
+IP_ADDR = '127.0.0.1'
+BUF_SIZE = 1024
+k = socket.socket (socket.AF_INET, socket.SOCK_STREAM)
+k.connect((IP_ADDR, TCP_PORT))
+MSG = "Hello, I am the Client!"
+k.send(MSG.encode())
+data = k.recv(BUF_SIZE)
+print(data.decode())
+k.close()
+
+-------------------------2.UDP--------------------
+import socket
+localIP     = "127.0.0.1"
+localPort   = 20001
+bufferSize  = 1024
+msgFromServer       = "Reply from Server"
+bytesToSend         = str.encode(msgFromServer)
+UDPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+UDPServerSocket.bind((localIP, localPort))
+bytesAddressPair = UDPServerSocket.recvfrom(bufferSize)
+message = bytesAddressPair[0]
+address = bytesAddressPair[1]
+clientMsg = "Message from Client:{}".format(message.decode())
+clientIP  = "Client IP Address:{}".format(address)
+print(clientMsg)
+print(clientIP)
+
+import socket
+serverAddressPort   = ("127.0.0.1", 20001)
+bufferSize          = 1024
+UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+msgFromClient       = "Hello UDP Server : I am UDP Client1"
+bytesToSend         = str.encode(msgFromClient)
+UDPClientSocket.sendto(bytesToSend, serverAddressPort)
+
+-----------------------------3.File-------------
+import socket
+TCP_IP = '127.0.0.1'
+TCP_PORT = 20001
+BUF_SIZE = 32
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.bind((TCP_IP, TCP_PORT))
+s.listen(1)
+conn, addr = s.accept()
+print ("Connection Address is : " , addr)
+file_name = conn.recv(BUF_SIZE).decode()
+print(f"File Name : {file_name}")
+try:
+    with open(file_name, 'r') as file:
+        data = file.read()
+        conn.send(data.encode())
+except:
+    conn.send("0x".encode())
+s.close()
+
+import socket
+TCP_IP = '127.0.0.1'
+TCP_PORT = 20001
+BUF_SIZE = 32
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect((TCP_IP, TCP_PORT))
+file_name = input("Enter The File Name : ")
+s.send(file_name.encode())
+data = s.recv(BUF_SIZE).decode()
+if data == "0x":
+    print(f"Msg From Server : File Not Exists")
+else:
+    file = open(file_name, 'a+')
+    while data:
+        file.write(data)
+        data = s.recv(BUF_SIZE).decode()
+    file.close()
+
+---------------4.HTTP-----------
+import socket
+SERVER_HOST = '127.0.0.1'
+SERVER_PORT = 8080
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+server_socket.bind((SERVER_HOST, SERVER_PORT))
+server_socket.listen(1)
+print(f"Listening on http://{SERVER_HOST}:{SERVER_PORT}")
+while True:
+    client_connection, client_address = server_socket.accept()
+    request = client_connection.recv(4096).decode()
+    print(request)
+    headers = request.splitlines()
+    filename = headers[0].split()[1]
+    if filename == '/':
+        filename = '/index.html'
+    try:
+        with open('htdocs' + filename, 'r') as fin:
+            content = fin.read()
+        response = (
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: text/html\r\n"
+            f"Content-Length: {len(content)}\r\n"
+            "Connection: close\r\n"
+            "\r\n"
+            + content
+        )
+    except FileNotFoundError:
+        content = "File Not Found"
+        response = (
+            "HTTP/1.1 404 Not Found\r\n"
+            "Content-Type: text/plain\r\n"
+            f"Content-Length: {len(content)}\r\n"
+            "Connection: close\r\n"
+            "\r\n"
+            + content
+        )
+    client_connection.sendall(response.encode())
+    client_connection.close()
+
+------------------------5.Character Count----------
+def sender(data):
+    # Calculate the length of the data
+    count = len(data)
+    # Create the frame (count + data)
+    frame = str(count) + "|" + data
+    print("Sender Side")
+    print("Original Data:", data)
+    print("Frame Sent:", frame)
+    return frame
+def receiver(frame):
+    print("\nReceiver Side")
+    # Split the frame into count and data
+    count, data = frame.split("|")
+    count = int(count)
+    # Extract the data using the character count
+    received_data = data[:count]
+    print("Character Count:", count)
+    print("Data Received:", received_data)
+
+
+-----------------------------6.BIT BYTE----------------------
+# Bit Stuffing Simulation
+FLAG = "01111110"
+def bit_stuffing(data):
+    count = 0
+    stuffed = ""
+    for bit in data:
+        stuffed += bit
+        if bit == '1':
+            count += 1
+        else:
+            count = 0
+        if count == 5:
+            stuffed += '0'   # stuff 0 after five 1s
+            count = 0
+    frame = FLAG + stuffed + FLAG
+    return frame
+def bit_destuffing(frame):
+    data = frame[8:-8]  # remove flag
+    count = 0
+    destuffed = ""
+    i = 0
+    while i < len(data):
+        destuffed += data[i]
+        if data[i] == '1':
+            count += 1
+        else:
+            count = 0
+        if count == 5:
+            i += 1   # skip stuffed 0
+            count = 0
+        i += 1
+    return destuffed
+data = input("Enter bit data: ")
+frame = bit_stuffing(data)
+print("Stuffed Frame:", frame)
+original = bit_destuffing(frame)
+print("Destuffed Data:", original
+
+# Byte Stuffing Simulation
+FLAG = "F"
+ESC = "E"
+def byte_stuffing(data):
+    stuffed = ""
+    for ch in data:
+        if ch == FLAG or ch == ESC:
+            stuffed += ESC   # insert escape character
+        stuffed += ch   
+    # add flag at start and end
+    frame = FLAG + stuffed + FLAG
+    return frame
+def byte_destuffing(frame):
+    data = frame[1:-1]  # remove start and end flag
+    destuffed = ""
+    i = 0
+    while i < len(data):
+        if data[i] == ESC:
+            i += 1  # skip escape
+        destuffed += data[i]
+        i += 1
+    return destuffed
+data = input("Enter data: ")
+frame = byte_stuffing(data)
+print("Stuffed Frame:", frame)
+original = byte_destuffing(frame)
+
+-------------------7.Leaky---------------
+def leaky_bucket(packets, bucket_size, output_rate): 
+    bucket = 0 
+    for i in range(len(packets)): 
+        print(f"\nPacket {i+1}: {packets[i]}") 
+        if bucket + packets[i] > bucket_size: 
+            print("Bucket Overflow! Packet Dropped") 
+        else: 
+            bucket += packets[i] 
+            print("Packet added. Bucket size:", bucket) 
+        bucket -= output_rate 
+if bucket < 0: 
+bucket = 0 
+print("After transmission, bucket size:", bucket) 
+# Example 
+packets = [4, 2, 6, 3, 5] 
+leaky_bucket(packets, bucket_size=10, output_rate=3)
+
+---------------------8.Token---------------------
+def token_bucket(packets, bucket_size, token_rate): 
+    tokens = bucket_size 
+    for i in range(len(packets)): 
+        tokens = min(bucket_size, tokens + token_rate) 
+        print(f"\nPacket {i+1}: {packets[i]}") 
+        print("Available tokens:", tokens) 
+        if tokens >= packets[i]: 
+            tokens -= packets[i] 
+            print("Packet transmitted") 
+        else: 
+            print("Packet dropped (not enough tokens)") 
+# Example 
+packets = [4, 2, 6, 3, 5] 
+token_bucket(packets, bucket_size=10, token_rate=3)
+
+-------------------9.LRC--------------
+def lrc(data): 
+    result = data[0] 
+    for i in range(1, len(data)): 
+        temp = "" 
+        for j in range(len(data[i])): 
+            if result[j] == data[i][j]: 
+                temp += '0' 
+            else: 
+                temp += '1' 
+        result = temp 
+    return result 
+# Example 
+data = ["1101", "1011", "1001"] 
+print("LRC:", lrc(data)) 
+
+--------------10.CRC-----------
+def xor(a, b): 
+    result = "" 
+    for i in range(1, len(b)): 
+        if a[i] == b[i]: 
+            result += "0" 
+        else: 
+            result += "1" 
+    return result 
+def mod2div(dividend, divisor): 
+    pick = len(divisor) 
+    tmp = dividend[0:pick] 
+ 
+    while pick < len(dividend): 
+        if tmp[0] == '1': 
+            tmp = xor(divisor, tmp) + dividend[pick] 
+        else: 
+            tmp = xor('0'*pick, tmp) + dividend[pick] 
+        pick += 1 
+    if tmp[0] == '1': 
+        tmp = xor(divisor, tmp) 
+    else: 
+        tmp = xor('0'*pick, tmp) 
+    return tmp 
+ 
+def encode(data, key): 
+    appended = data + '0'*(len(key)-1) 
+    remainder = mod2div(appended, key) 
+    return data + remainder 
+def check(data, key): 
+remainder = mod2div(data, key) 
+return remainder 
+# Example 
+data = "1101" 
+key = "1011" 
+codeword = encode(data, key) 
+print("Transmitted:", codeword) 
+if check(codeword, key) == "0"*(len(key)-1): 
+print("No error") 
+else: 
+print("Error detected") 
+
+--------------11.VRC----------
+def vrc(data): 
+count = data.count('1') 
+if count % 2 == 0: 
+return data + '0' 
+else: 
+return data + '1' 
+# Example 
+data = "1101" 
+print("VRC:", vrc(data))
+
+------------12.HAmming Code---------
+def hamming_encode(data): 
+    m = len(data) 
+    r = 0 
+    while (2**r < m + r + 1): 
+        r += 1 
+    res = ['0'] * (m + r) 
+    j = 0 
+    for i in range(1, len(res)+1): 
+        if i & (i-1) != 0: 
+            res[i-1] = data[j] 
+            j += 1
+    for i in range(r): 
+        pos = 2**i 
+        val = 0 
+        for j in range(1, len(res)+1): 
+            if j & pos: 
+                val ^= int(res[j-1]) 
+        res[pos-1] = str(val) 
+return ''.join(res) 
+# Example 
+data = "1011" 
+print("Hamming Code:", hamming_encode(data)) 
